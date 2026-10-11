@@ -1,8 +1,7 @@
 """Final scan of the repository and its git history.
 
 Nothing in the files or the history may carry a local path, an email address (other than the two
-allowed ones), a real name, or a domain term from the original project. Everything below is
-strict except one check that is recorded as an expected failure (see the last test).
+allowed ones), a real name, or a domain term from the original project. Every check is strict.
 
 This file and tests/test_readme.py are excluded from the scans because they necessarily contain
 the words they search for.
@@ -18,7 +17,6 @@ ROOT = Path(__file__).resolve().parents[1]
 NOREPLY = "340698105+yotamgillon@users.noreply.github.com"
 ALLOWED_EMAILS = {NOREPLY, "noreply@anthropic.com"}
 ALLOWED_AUTHOR = "yotamgillon"
-NEUTRAL_COMMIT_SUBJECT = "Neutralize the synthetic vocabulary"
 EXCLUDE = [
     ":(exclude)tests/test_repo_scan.py",
     ":(exclude)tests/test_readme.py",
@@ -113,12 +111,8 @@ def test_history_has_no_local_paths_emails_or_names(full_history):
     assert personal_hits(grep_files(PERSONAL, full_history)) == []
 
 
-def test_history_since_the_vocabulary_change_has_no_domain_terms(full_history):
-    commit = git("log", "--all", "--format=%H", f"--grep=^{NEUTRAL_COMMIT_SUBJECT}").stdout.split()
-    if not commit:
-        pytest.skip("the vocabulary commit is not in this history")
-    since = git("rev-list", "HEAD", "--not", f"{commit[0]}^").stdout.split()
-    assert commit[0] in since and grep_files(DOMAIN, since) == []
+def test_history_has_no_domain_terms(full_history):
+    assert grep_files(DOMAIN, full_history) == []
 
 
 # --- the patterns themselves can fail ---------------------------------------------------------
@@ -142,15 +136,3 @@ def test_the_patterns_do_not_flag_ordinary_text():
     ordinary = "a TF-IDF model, the Operator UI, a power harness and the alignment module"
     assert not any(re.search(p, ordinary, re.I) for p in [*DOMAIN, *LOCAL_PATHS, *OLD_IDENTITY])
     assert unexpected_emails(f"Co-Authored-By: Claude <noreply@anthropic.com> {NOREPLY}") == []
-
-
-@pytest.mark.xfail(
-    strict=False,
-    reason=(
-        "Carried over from the previous repository, whose older commits still contained the old "
-        "domain words. This history is clean, so the check passes (XPASS); the marker is removed "
-        "in the next commit."
-    ),
-)
-def test_full_history_has_no_domain_terms(full_history):
-    assert grep_files(DOMAIN, full_history) == []
