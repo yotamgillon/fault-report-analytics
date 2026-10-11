@@ -4,7 +4,9 @@ The agreement tests recalculate the workbook in headless LibreOffice (CI install
 FIELD_OPS_REQUIRE_LIBREOFFICE=1) and compare every summary number with the pandas metrics.
 """
 
+import re
 import warnings
+import xml.etree.ElementTree as ET
 import zipfile
 from datetime import date, datetime
 
@@ -416,3 +418,72 @@ def test_changing_the_reporting_date_ages_the_backlog(built, soffice):
     assert compare(wb, layout, m_later) == []
     assert _close(wb["Dashboard"][layout.kpi["open30"]].value, m_later.kpis["open_over_30_days"])
     assert m_later.kpis["open_over_30_days"] > m.kpis["open_over_30_days"]
+
+
+# --- Excel rendering details (these only show up in desktop Excel, so they are checked in the XML)
+CHART_NS = {
+    "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+}
+
+
+def chart_parts(path) -> dict[str, ET.Element]:
+    with zipfile.ZipFile(path) as z:
+        names = sorted(n for n in z.namelist() if re.fullmatch(r"xl/charts/chart\d+\.xml", n))
+        return {n: ET.fromstring(z.read(n)) for n in names}
+
+
+def chart_title(chart: ET.Element) -> str:
+    title = chart.find("c:chart/c:title", CHART_NS)
+    return "".join(t.text or "" for t in title.iter(f"{{{CHART_NS['a']}}}t"))
+
+
+def test_chart_titles_do_not_overlay_the_plot_area(built):
+    charts = chart_parts(built[0])
+    assert len(charts) == 4
+    for name, chart in charts.items():
+        overlay = chart.find("c:chart/c:title/c:overlay", CHART_NS)
+        assert overlay is not None and overlay.get("val") == "0", name  # explicit, not implied
+        legend_overlay = chart.find("c:chart/c:legend/c:overlay", CHART_NS)
+        if legend_overlay is not None:
+            assert legend_overlay.get("val") == "0", name
+
+
+def test_charts_have_no_axis_titles_and_state_the_unit_in_the_title(built):
+    charts = chart_parts(built[0])
+    for name, chart in charts.items():
+        for axis in [
+            *chart.iter(f"{{{CHART_NS['c']}}}valAx"),
+            *chart.iter(f"{{{CHART_NS['c']}}}catAx"),
+        ]:
+            assert axis.find("c:title", CHART_NS) is None, name  # no titles to collide with ticks
+    titles = [chart_title(c) for c in charts.values()]
+    assert len(titles) == 4 and all("(" in t and t.endswith(")") for t in titles), titles
+    joined = " | ".join(titles)
+    for unit in ("(days)", "(tickets)", "%"):
+        assert unit in joined, unit
+
+
+def test_line_chart_legend_is_above_the_plot_and_month_labels_fit(built):
+    line = next(
+        c for c in chart_parts(built[0]).values() if c.find(".//c:lineChart", CHART_NS) is not None
+    )
+    assert line.find("c:chart/c:legend/c:legendPos", CHART_NS).get("val") == "t"
+    axis = line.find(".//c:catAx", CHART_NS)
+    assert axis.find("c:txPr/a:bodyPr", CHART_NS).get("rot") == "-2700000"  # 45 degrees
+    assert int(axis.find("c:txPr//a:defRPr", CHART_NS).get("sz")) <= 900  # 9 pt or smaller
+    assert axis.find("c:tickLblSkip", CHART_NS).get("val") == "1"  # every month is labelled
+
+
+def test_sla_numbers_are_labelled_as_demo_values_in_the_workbook(formulas, built):
+    layout = built[1]
+    card = formulas["Dashboard"][layout.kpi["breach"].replace("8", "7")].value
+    assert "SLA" in card and "DEMO" in card
+    assert "demo" in formulas["Dashboard"]["B10"].value.lower()
+    for sheet, keys in (("By_Vendor", ("tier", "sla_days", "breaches", "breach_rate")),
+                        ("By_Site", ("breaches", "breach_rate"))):  # fmt: skip
+        header_row = layout.rows[sheet]["first"] - 1
+        for key in keys:
+            header = formulas[sheet][f"{layout.cols[sheet][key]}{header_row}"].value
+            assert "demo" in header.lower(), (sheet, key, header)
+        assert "demo" in formulas[sheet]["A2"].value.lower(), sheet

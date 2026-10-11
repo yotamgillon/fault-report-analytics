@@ -30,7 +30,16 @@ from openpyxl.chart import BarChart, LineChart, Reference
 from openpyxl.chart.label import DataLabelList
 from openpyxl.chart.marker import Marker
 from openpyxl.chart.shapes import GraphicalProperties
+from openpyxl.chart.text import RichText, Text
+from openpyxl.chart.title import Title
 from openpyxl.drawing.line import LineProperties
+from openpyxl.drawing.text import (
+    CharacterProperties,
+    Paragraph,
+    ParagraphProperties,
+    RegularTextRun,
+    RichTextProperties,
+)
 from openpyxl.formatting.rule import ColorScaleRule, DataBarRule, FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -516,8 +525,8 @@ def _vendor_columns(first_total: str) -> tuple[list[Column], dict[str, str]]:
 
     columns = [
         Column("vendor", "Vendor", 13),
-        Column("tier", "Tier", 9, None, lookup("tier")),
-        Column("sla_days", "SLA target (days)", 10, "0", lookup("sla_target_days")),
+        Column("tier", "Tier (demo)", 11, None, lookup("tier")),
+        Column("sla_days", "SLA target, days (demo)", 13, "0", lookup("sla_target_days")),
         Column("tickets", "Tickets", 9, FMT_INT, cnt("")),
         Column("resolved", "Resolved (n)", 10, FMT_INT, cnt(f",{col('resolved')},1")),
         Column(
@@ -548,11 +557,11 @@ def _vendor_columns(first_total: str) -> tuple[list[Column], dict[str, str]]:
             None,
             lambda r, c: f'=IF({c["resolved"]}{r}<MinSample,"low sample","")',
         ),
-        Column("breaches", "SLA breaches", 10, FMT_INT, cnt(f",{col('sla_breach')},1")),
+        Column("breaches", "SLA breaches (demo)", 12, FMT_INT, cnt(f",{col('sla_breach')},1")),
         Column(
             "breach_rate",
-            "SLA breach rate",
-            10,
+            "SLA breach rate (demo)",
+            12,
             FMT_PCT,
             lambda r, c: f'=IF({c["resolved"]}{r}=0,"",{c["breaches"]}{r}/{c["resolved"]}{r})',
         ),
@@ -610,7 +619,8 @@ def _build_by_vendor(wb: Workbook, m: Metrics, layout: Layout) -> None:
     L, index, total_row = _write_summary(
         wb, "By_Vendor", "Vendor scorecard",
         "Median first, mean beside it. Groups under MinSample resolved tickets are marked "
-        "'low sample'. SLA targets come from the Vendors sheet (XLOOKUP).",
+        "'low sample'. Tier and SLA columns are DEMO values joined from the Vendors sheet "
+        "(XLOOKUP): synthetic targets, not real contract terms.",
         columns, keys, total, layout,
     )  # fmt: skip
     ws = wb["By_Vendor"]
@@ -782,11 +792,11 @@ def _build_by_site(wb: Workbook, m: Metrics, layout: Layout) -> None:
             None,
             lambda r, c: f'=IF({c["resolved"]}{r}<MinSample,"low sample","")',
         ),  # fmt: skip
-        Column("breaches", "SLA breaches", 10, FMT_INT, cnt(f",{col('sla_breach')},1")),
+        Column("breaches", "SLA breaches (demo)", 12, FMT_INT, cnt(f",{col('sla_breach')},1")),
         Column(
             "breach_rate",
-            "SLA breach rate",
-            10,
+            "SLA breach rate (demo)",
+            12,
             FMT_PCT,
             lambda r, c: f'=IF({c["resolved"]}{r}=0,"",{c["breaches"]}{r}/{c["resolved"]}{r})',
         ),
@@ -838,7 +848,7 @@ def _build_by_site(wb: Workbook, m: Metrics, layout: Layout) -> None:
     L, index, total_row = _write_summary(
         wb, "By_Site", "Site view",
         "Open > 30 days is the backlog that has aged; the median age shows how old the typical "
-        "open ticket is.",
+        "open ticket is. SLA columns use DEMO targets from the Vendors sheet.",
         columns, keys, total, layout,
     )  # fmt: skip
     ws = wb["By_Site"]
@@ -1058,11 +1068,33 @@ def _build_dq(wb: Workbook, dq: dict | None) -> None:
 # ---------------------------------------------------------------------------------------------
 # Dashboard
 # ---------------------------------------------------------------------------------------------
-def _bar_chart(ws, title: str, y_title: str, anchor: str, cats, data, horizontal=True,
+def _chart_title(text: str) -> Title:
+    """A title that sits above the plot (overlay off) and carries the unit.
+
+    Excel draws a title with no explicit overlay setting on top of the plot area, hiding the
+    first bar, so the setting is written explicitly.
+    """
+    font = CharacterProperties(sz=1200, b=True)
+    paragraph = Paragraph(
+        pPr=ParagraphProperties(defRPr=font), r=[RegularTextRun(rPr=font, t=text)]
+    )
+    return Title(tx=Text(rich=RichText(p=[paragraph])), overlay=False)
+
+
+def _small_rotated_labels() -> RichText:
+    """Axis label text: 8 pt, turned 45 degrees, so twelve month labels never run together."""
+    font = CharacterProperties(sz=800)
+    return RichText(
+        bodyPr=RichTextProperties(rot=-2700000, vert="horz"),
+        p=[Paragraph(pPr=ParagraphProperties(defRPr=font), endParaRPr=font)],
+    )
+
+
+def _bar_chart(ws, title: str, anchor: str, cats, data, horizontal=True,
                from_rows=False, color=BLUE, label_fmt: str = "0.0") -> None:  # fmt: skip
     chart = BarChart()
     chart.type = "bar" if horizontal else "col"
-    chart.title = title
+    chart.title = _chart_title(title)
     chart.add_data(data, titles_from_data=False, from_rows=from_rows)
     chart.set_categories(cats)
     chart.legend = None
@@ -1077,7 +1109,6 @@ def _bar_chart(ws, title: str, y_title: str, anchor: str, cats, data, horizontal
     labels.numFmt = label_fmt
     for axis in (chart.x_axis, chart.y_axis):
         axis.delete = False
-    chart.y_axis.title = y_title
     chart.y_axis.majorGridlines.spPr = GraphicalProperties(ln=LineProperties(solidFill=GRID))
     chart.x_axis.tickLblSkip = 1  # show every category label
     if horizontal:
@@ -1133,9 +1164,9 @@ def _build_dashboard(wb: Workbook, m: Metrics, layout: Layout, selection: tuple[
         ("mean", "MEAN DAYS TO RESOLVE",
          f'=IFERROR(AVERAGEIFS({col("days_to_resolve")},{base},{col("resolved")},1),"")',
          FMT_1DP, False, "pulled up by long tails"),
-        ("breach", "SLA BREACH RATE",
+        ("breach", "SLA BREACH RATE (DEMO)",
          f'=IFERROR(COUNTIFS({base},{col("sla_breach")},1)/COUNTIFS({base},'
-         f'{col("sla_breach")},">=0"),"")', FMT_PCT, False, "of resolved tickets"),
+         f'{col("sla_breach")},">=0"),"")', FMT_PCT, False, "of resolved, vs demo SLA targets"),
         ("repeat", "REPEAT RATE",
          f'=IFERROR(COUNTIFS({base},{col("is_repeat")},1)/COUNTIFS({base},'
          f'{col("repeat_counted")},1),"")', FMT_PCT, False, None),
@@ -1162,6 +1193,11 @@ def _build_dashboard(wb: Workbook, m: Metrics, layout: Layout, selection: tuple[
     ws.row_dimensions[9].height = 24
     layout.selectors = {"vendor": "C4", "site": "F4"}
 
+    ws["B10"] = (
+        "SLA targets and breach rates are demo values (Vendors sheet): synthetic, not real "
+        "contract terms."
+    )
+    ws["B10"].font = f(size=8, italic=True, color=MUTED)
     ws["B11"] = (
         '=IF(C8<MinSample,"Low sample: fewer than "&MinSample&" resolved tickets in this '
         'selection, so treat the medians with caution.","")'
@@ -1179,7 +1215,7 @@ def _build_dashboard(wb: Workbook, m: Metrics, layout: Layout, selection: tuple[
     v = layout.rows["By_Vendor"]["index"]
     vl = layout.cols["By_Vendor"]
     v_first, v_last = min(v.values()), max(v.values())
-    _bar_chart(ws, "Median days to resolve, by vendor", "days", "B13",
+    _bar_chart(ws, "Median time to resolve, by vendor (days)", "B13",
                Reference(bv, min_col=1, min_row=v_first, max_row=v_last),
                Reference(bv, min_col=_col_idx(vl["median"]), min_row=v_first,
                          max_row=v_last))  # fmt: skip
@@ -1188,7 +1224,7 @@ def _build_dashboard(wb: Workbook, m: Metrics, layout: Layout, selection: tuple[
     ml = layout.cols["Monthly"]
     m_first, m_last = 6, 5 + len(m.monthly)
     line = LineChart()
-    line.title = "Faults opened vs closed per month"
+    line.title = _chart_title("Faults opened vs closed per month (tickets)")
     for key, color in (("opened", BLUE), ("closed", ORANGE)):
         idx = _col_idx(ml[key])
         line.add_data(Reference(mo, min_col=idx, min_row=m_first - 1, max_row=m_last),
@@ -1205,14 +1241,16 @@ def _build_dashboard(wb: Workbook, m: Metrics, layout: Layout, selection: tuple[
     line.x_axis.number_format = "mmm yy"
     for axis in (line.x_axis, line.y_axis):
         axis.delete = False
-    line.y_axis.title = "tickets"
     line.y_axis.majorGridlines.spPr = GraphicalProperties(ln=LineProperties(solidFill=GRID))
-    line.legend.position = "b"
-    line.width, line.height = 13.2, 8.2
+    line.legend.position = "t"  # above the plot, never over the month labels
+    line.legend.overlay = False
+    line.x_axis.txPr = _small_rotated_labels()
+    line.x_axis.tickLblSkip = 1
+    line.width, line.height = 13.2, 8.8
     ws.add_chart(line, "F13")
 
     bl = wb["Backlog"]
-    _bar_chart(ws, "Open backlog by age (days since opened)", "tickets", "B32",
+    _bar_chart(ws, "Open backlog by age (tickets, by days since opened)", "B32",
                Reference(bl, min_col=3, max_col=6, min_row=5),
                Reference(bl, min_col=3, max_col=6, min_row=6, max_row=6),
                horizontal=False, from_rows=True, label_fmt="0")  # fmt: skip
@@ -1220,7 +1258,7 @@ def _build_dashboard(wb: Workbook, m: Metrics, layout: Layout, selection: tuple[
     sy = wb["By_System"]
     sl = layout.cols["By_System"]
     s_first = layout.rows["By_System"]["first"]
-    _bar_chart(ws, "Top 10 systems by repeat rate (at build time)", "repeat rate", "F32",
+    _bar_chart(ws, "Top 10 systems by repeat rate (% of faults, at build time)", "F32",
                Reference(sy, min_col=1, min_row=s_first, max_row=s_first + 9),
                Reference(sy, min_col=_col_idx(sl["rep_rate"]), min_row=s_first,
                          max_row=s_first + 9),
