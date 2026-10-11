@@ -1,0 +1,67 @@
+text,expected,kind
+"Unit will not power on after overnight storage, pack reads zero",Power,off-template wording
+"Cells swollen on pack 3, taken out of service",Power,off-template wording
+"Brownout during startup, logs show bus dropping to 9V",Power,off-template wording
+Generator output unstable at idle,Power,off-template wording
+"UPS beeping constantly, not holding load",Power,off-template wording
+Fuse blew twice this week on the main harness,Power,off-template wording
+Smell of burning from the charger bay,Power,off-template wording
+Low battery warning appears at 60 percent,Power,off-template wording
+"Lost link with the unit at about 2km, recovered after 30 seconds",Communications,off-template wording
+Operator reports lots of interference on the control channel,Communications,off-template wording
+Radio dropouts when operating behind the warehouse,Communications,off-template wording
+"No response from the remote controller, rebinding did not help",Communications,off-template wording
+Intermittent loss of signal on the video link,Communications,off-template wording
+Satcom terminal fails to register,Communications,off-template wording
+High latency on the command channel,Communications,off-template wording
+Antenna cable damaged near the connector,Communications,off-template wording
+Unit drifted 15 mm off its reference mark in calm conditions,Calibration,off-template wording
+Alignment lock takes ages after cold start,Calibration,off-template wording
+Homing routine ran in the wrong direction,Calibration,off-template wording
+Pressure reading jumps while idle,Calibration,off-template wording
+Magnetic interference warning near the steel fence,Calibration,off-template wording
+Tolerance alarm with no out-of-tolerance reading,Calibration,off-template wording
+Calibration routine skipped the third step,Calibration,off-template wording
+Level hold unreliable,Calibration,off-template wording
+Picture is out of focus at full zoom,Sensor,off-template wording
+Camera shows horizontal lines on the live feed,Sensor,off-template wording
+Dead pixels visible on the infrared view,Sensor,off-template wording
+Rangefinder returns no distance,Sensor,off-template wording
+Pan-tilt head stuck pointing down after boot,Sensor,off-template wording
+Depth scanner output has gaps,Sensor,off-template wording
+Image has a green tint,Sensor,off-template wording
+Thermal camera shutter clicking constantly,Sensor,off-template wording
+App closes by itself when loading the site map,Software,off-template wording
+Firmware flash failed at 40 percent,Software,off-template wording
+Operator console is very slow and unresponsive,Software,off-template wording
+License server unreachable at startup,Software,off-template wording
+After the latest update the settings were wiped,Software,off-template wording
+"Job file will not upload, error 0x80",Software,off-template wording
+Crash on opening the checklist,Software,off-template wording
+Time sync drift between laptops,Software,off-template wording
+Guard cracked after a bump,Mechanical,off-template wording
+"Arm folded unevenly, one hinge stiff",Mechanical,off-template wording
+Bearing noise from the left motor when spinning up,Mechanical,off-template wording
+Support leg bent on impact,Mechanical,off-template wording
+Skid plate worn through,Mechanical,off-template wording
+Latch on the transport case broke,Mechanical,off-template wording
+Strong vibration at full speed,Mechanical,off-template wording
+"Water ingress in the housing, corrosion on the screws",Mechanical,off-template wording
+Not behaving right today,Unclassified,vague text
+Operator says it feels off,Unclassified,vague text
+Please look at unit 4,Unclassified,vague text
+"Fault again, same as Tuesday",Unclassified,vague text
+Intermittent issue during the shift,Unclassified,vague text
+Technician required urgently,Unclassified,vague text
+Camera freezes right after the firmware update,Sensor,two categories in one sentence
+Radio drops out whenever the battery is swapped,Communications,two categories in one sentence
+Alignment error after hard impact,Calibration,two categories in one sentence
+Battery pack overheated following a software reboot,Power,two categories in one sentence
+Motor vibration after a firmware update,Mechanical,two categories in one sentence
+Camera crashes due to low battery,Sensor,two categories in one sentence
+Anntenna cable loose,Communications,misspelled words
+Battary swelling visible,Power,misspelled words
+Camra shows black screen,Sensor,misspelled words
+Calibraton offset lost,Calibration,misspelled words
+Firmwear update fails,Software,misspelled words
+Bearng cracked,Mechanical,misspelled words

@@ -1,0 +1,16 @@
+vendor,tier,sla_target_days,support_region,contract_type
+Vendor A,Tier 1,5,North America,Full support
+Vendor B,Tier 1,5,Europe,Full support
+Vendor C,Tier 2,7,Asia-Pacific,Parts only
+Vendor D,Tier 3,10,Europe,Time & materials
+Vendor E,Tier 2,7,North America,Full support
+Vendor F,Tier 2,7,Europe,Parts only
+Vendor G,Tier 1,5,Asia-Pacific,Full support
+Vendor H,Tier 3,10,North America,Time & materials
+Vendor I,Tier 3,10,Europe,Parts only
+Vendor J,Tier 2,7,Asia-Pacific,Full support
+Vendor K,Tier 2,7,North America,Time & materials
+Vendor L,Tier 3,10,Asia-Pacific,Full support
+Vendor M,Tier 1,5,Europe,Parts only
+Vendor N,Tier 3,10,Asia-Pacific,Time & materials
+Vendor O,Tier 1,5,North America,Full support
