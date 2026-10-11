@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04  # pinned: the LibreOffice PPA step targets 24.04 (noble)
+    env:
+      # Fail the build (instead of skipping) if LibreOffice is missing or too old to evaluate
+      # the workbook's XLOOKUP formulas.
+      FIELD_OPS_REQUIRE_LIBREOFFICE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # the repository scan reads the whole git history
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install LibreOffice (24.8 or newer is needed for XLOOKUP)
+        run: |
+          sudo add-apt-repository -y ppa:libreoffice/ppa
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-calc
+          soffice --version
+      - name: Run full pipeline (incl. Excel formula-error check), lint and tests
+        run: make all
+      - name: Keep the generated reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            output/field_ops_report.xlsx
+            output/data_quality.md
+            output/metrics_report.md
+          if-no-files-found: ignore
