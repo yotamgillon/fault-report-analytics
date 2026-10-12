@@ -94,3 +94,10 @@ def test_report_includes_classification_per_noise_type(pipeline_run):
                    "two categories in one sentence", "text contradicts logged category",
                    "Challenge set", "never overwritten"):  # fmt: skip
         assert needle in text
+
+
+def test_report_does_not_present_the_challenge_set_as_independent(pipeline_run):
+    text = quality.to_markdown(pipeline_run.report)
+    assert "written by the same AI assistant that wrote the rules" in text
+    assert "not independent evidence" in text
+    assert "hand-written" not in text and "by hand" not in text

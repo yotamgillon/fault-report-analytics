@@ -6,6 +6,8 @@
 > `data/reference/vendors.csv` are arbitrary demo values, and every finding below describes this
 > synthetic dataset only.
 
+Built with Claude Code. Design decisions, requirements and review were mine, the code was written with the assistant.
+
 An end-to-end analytics project: take messy multi-vendor field fault reports, clean them, and show
 which faults repeat, how long they take to resolve, and which vendors and systems perform worst.
 One Python pipeline produces a clean dataset, a formula-driven Excel report and a Streamlit
@@ -131,10 +133,11 @@ Honest results, including the ones that did not work.
 
 - **Classification: simple rules beat the ML model, and both fall apart off-template.** On the
   generated data the keyword rules score close to 100%, but that is not a fair test: the same
-  author wrote the rules and the text templates. On a separate hand-written challenge set of 66
+  assistant wrote the rules and the text templates. On a separate challenge set of 66 short
   descriptions the rules scored **59%** (39 of 66: one confident wrong answer, 26 safe
   abstentions) and the TF-IDF + logistic-regression model **42%** (28 of 66: four wrong, 34
-  abstentions). The set is small and authored by me, so treat each figure as roughly plus or minus
+  abstentions). The challenge set was written by the same AI assistant that wrote the rules, so
+  it is not independent evidence, and it is small, so treat each figure as roughly plus or minus
   12 points. The model was trained only on the generator's templated text, which is the likely
   reason it generalises worse. These figures moved slightly when the vocabulary of the synthetic
   data was made neutral: an earlier version of the set scored 58% and 33%. The challenge set and
@@ -207,8 +210,8 @@ src/field_ops/   generate, mess, clean, dedupe, classify, metrics, quality, eval
                  excel_report, libreoffice, pipeline (the `field-ops` command)
 app/             Streamlit dashboard
 scripts/         screenshots.py (dev tool)
-data/reference/  vendors.csv (demo values), challenge_descriptions.csv (hand-written test set)
-tests/           about 240 tests, including Excel-vs-pandas agreement via LibreOffice
+data/reference/  vendors.csv (demo values), challenge_descriptions.csv (small classifier test set)
+tests/           274 tests, including Excel-vs-pandas agreement via LibreOffice
 docs/img/        screenshots (Excel captures: see docs/img/CAPTURE.md)
 .github/         CI: pipeline, LibreOffice formula check, lint, tests
 ```

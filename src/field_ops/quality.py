@@ -85,7 +85,7 @@ def _low_confidence(final: pd.DataFrame) -> dict:
 
 
 def _challenge_scores(classified: ClassifyResult) -> dict | None:
-    """Hand-written descriptions with different wording: the realistic estimate."""
+    """Descriptions with different wording: a better estimate than the in-dataset numbers."""
     try:
         challenge = evaluate.load_challenge()
     except FileNotFoundError:
@@ -247,10 +247,11 @@ def _challenge_section(challenge: dict | None) -> list[str]:
     if not challenge:
         return []
     out = [
-        "### Challenge set: hand-written descriptions with different wording",
+        "### Challenge set: descriptions with different wording",
         "",
-        "66 short descriptions written by hand in ordinary engineer language, before looking at "
-        "any results, and not tuned afterwards (`data/reference/challenge_descriptions.csv`). "
+        "66 short descriptions in ordinary engineer language, written by the same AI assistant "
+        "that wrote the rules, so this is not independent evidence. Written in one pass before "
+        "being scored and not tuned afterwards (`data/reference/challenge_descriptions.csv`). "
         "`wrong` = confident wrong category; `unclassified` = safe miss on a text that has an "
         "answer.",
         "",
@@ -341,9 +342,9 @@ def _classification_section(c: dict) -> list[str]:
         *false_flags,
         "",
         "**Read the in-dataset numbers as a regression check, not as expected real-world "
-        "accuracy.** The keyword list was written by the same person who wrote the generator's "
-        "phrase templates, so the rules know the vocabulary. The challenge set below is the "
-        "realistic estimate.",
+        "accuracy.** The keyword list was written by the same AI assistant that wrote the "
+        "generator's phrase templates, so the rules know the vocabulary. The challenge set below "
+        "is a better estimate, though it has the same author and is small.",
         "",
         *_challenge_section(c.get("challenge")),
     ]

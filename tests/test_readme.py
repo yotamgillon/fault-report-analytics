@@ -5,6 +5,8 @@ that moves a figure fails here until the README is updated.
 """
 
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +24,43 @@ def test_readme_opens_with_the_synthetic_data_note():
     body = README.split("\n", 1)[1].strip()  # after the title
     assert body.startswith("> **Synthetic data, demo values.**")
     assert body.index("Synthetic data, demo values") < body.index("## The problem")
+
+
+CREDIT = (
+    "Built with Claude Code. Design decisions, requirements and review were mine, "
+    "the code was written with the assistant."
+)
+
+
+def test_assistant_credit_follows_the_synthetic_data_note():
+    body = README.split("\n", 1)[1]
+    assert CREDIT in body
+    assert (
+        body.index("Synthetic data, demo values")
+        < body.index(CREDIT)
+        < body.index("## The problem")
+    )
+    assert body.count("Claude Code") == 1  # one short line, not a theme
+
+
+def test_challenge_set_is_not_presented_as_the_owners_independent_work():
+    for claim in (r"hand-?written", r"authored by me", r"written by me", r"written by hand"):
+        assert not re.search(claim, README, re.I), claim
+    findings = section("Limitations and findings")
+    assert "written by the same AI assistant that wrote the rules" in findings
+    assert "not independent evidence" in findings
+    assert "plus or minus 12 points" in findings
+
+
+def test_the_test_count_in_the_readme_is_current():
+    out = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", "-o", "addopts=",
+         "-p", "no:cacheprovider", "tests"],
+        cwd=ROOT, capture_output=True, text=True, check=False,
+    )  # fmt: skip
+    match = re.search(r"(\d+) tests? collected", out.stdout)
+    assert match, out.stdout[-300:]
+    assert f"{match.group(1)} tests, including" in section("Repository layout")
 
 
 def test_required_sections_exist_in_order():
@@ -70,7 +109,7 @@ def test_capture_checklist_covers_every_excel_image():
 def test_findings_section_states_the_honest_results():
     findings = section("Limitations and findings")
     for needle in ("59%", "42%", "66", "sensitive but not specific", "85%", "modest",
-                   "not recovered", "authored by me", "not tuned afterwards",
+                   "not recovered", "not independent evidence", "not tuned afterwards",
                    "earlier version of the set scored 58% and 33%"):  # fmt: skip
         assert needle in findings, needle
 
@@ -102,12 +141,8 @@ def test_headline_numbers_match_the_pipeline(pipeline_run, metrics_run):
 def test_findings_numbers_match_the_pipeline(pipeline_run, metrics_run):
     text = section("What the data shows") + section("Limitations and findings")
     challenge = pipeline_run.report.classification["challenge"]
-    rules = challenge["Keyword rules"].set_index("kind").loc["all hand-written rows"]
-    ml = (
-        challenge["ML (TF-IDF + logistic regression)"]
-        .set_index("kind")
-        .loc["all hand-written rows"]
-    )
+    rules = challenge["Keyword rules"].set_index("kind").loc["all challenge rows"]
+    ml = challenge["ML (TF-IDF + logistic regression)"].set_index("kind").loc["all challenge rows"]
     assert f"**{rules['accuracy']:.0%}** ({int(rules['correct'])} of {int(rules['rows'])}" in text
     assert f"**{ml['accuracy']:.0%}** ({int(ml['correct'])} of {int(ml['rows'])}" in text
     assert rules["wrong"] == 1 and f"{int(rules['unclassified'])} safe abstentions" in text

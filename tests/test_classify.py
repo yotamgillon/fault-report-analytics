@@ -303,9 +303,9 @@ def test_challenge_scores_add_up_and_rules_do_not_guess_on_vague(pipeline_run):
     tables = pipeline_run.report.classification["challenge"]
     assert set(tables) == {"Keyword rules", "ML (TF-IDF + logistic regression)"}
     for table in tables.values():
-        body = table[table["kind"] != "all hand-written rows"]
+        body = table[table["kind"] != "all challenge rows"]
         assert (body["correct"] + body["wrong"] + body["unclassified"] == body["rows"]).all()
     rules = tables["Keyword rules"].set_index("kind")
     assert rules.loc["vague text", "accuracy"] == 1.0
     # Off-vocabulary wording must degrade into "unclassified", not into confident wrong answers.
-    assert rules.loc["all hand-written rows", "wrong"] <= 3
+    assert rules.loc["all challenge rows", "wrong"] <= 3

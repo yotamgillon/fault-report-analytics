@@ -245,7 +245,7 @@ def load_challenge(
 
 
 def challenge_by_kind(challenge: pd.DataFrame, pred: pd.Series) -> pd.DataFrame:
-    """Score a hand-written set of descriptions that do not share the generator's wording.
+    """Score a small set of descriptions that do not share the generator's wording.
 
     ``wrong`` means a confident wrong category; ``unclassified`` on a classifiable text is a
     safe miss. For vague text, Unclassified is the correct answer.
@@ -268,7 +268,7 @@ def challenge_by_kind(challenge: pd.DataFrame, pred: pd.Series) -> pd.DataFrame:
         )
     table = pd.DataFrame(rows)
     total = {
-        "kind": "all hand-written rows",
+        "kind": "all challenge rows",
         "rows": int(table["rows"].sum()),
         "correct": int(table["correct"].sum()),
         "wrong": int(table["wrong"].sum()),
