@@ -1,7 +1,8 @@
-"""Metrics on a tiny hand-computed fixture, then on the seeded dataset's planted patterns.
+"""Metrics on a tiny manually computed fixture, then on the seeded dataset's planted patterns.
 
-Fixture, reporting date 2026-03-31, repeat window 14 days. Every expected number was worked out
-by hand. See _ROWS below; in words:
+Fixture, reporting date 2026-03-31, repeat window 14 days. Every expected number was computed
+manually by the AI assistant that wrote the code, independently of the code under test. See _ROWS
+below; in words:
 - CTL-01 Power: R01 (4d), R02 (10d, opened 15d after R01 closed: outside 14d, a repeat only at
   30d), R03 (2d, 39d after R02 closed: no), R05 (open, 8d after R03 closed: repeat).
   R04 is the only Sensor fault.
